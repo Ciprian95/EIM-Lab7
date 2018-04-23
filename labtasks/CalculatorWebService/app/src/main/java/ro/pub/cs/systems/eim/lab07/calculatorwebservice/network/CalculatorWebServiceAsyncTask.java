@@ -1,7 +1,26 @@
 package ro.pub.cs.systems.eim.lab07.calculatorwebservice.network;
 
 import android.os.AsyncTask;
+import android.util.Log;
 import android.widget.TextView;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import cz.msebera.android.httpclient.HttpEntity;
+import cz.msebera.android.httpclient.HttpResponse;
+import cz.msebera.android.httpclient.NameValuePair;
+import cz.msebera.android.httpclient.client.HttpClient;
+import cz.msebera.android.httpclient.client.ResponseHandler;
+import cz.msebera.android.httpclient.client.entity.UrlEncodedFormEntity;
+import cz.msebera.android.httpclient.client.methods.HttpGet;
+import cz.msebera.android.httpclient.client.methods.HttpPost;
+import cz.msebera.android.httpclient.impl.client.BasicResponseHandler;
+import cz.msebera.android.httpclient.impl.client.DefaultHttpClient;
+import cz.msebera.android.httpclient.message.BasicNameValuePair;
+import cz.msebera.android.httpclient.protocol.HTTP;
+import cz.msebera.android.httpclient.util.EntityUtils;
+import ro.pub.cs.systems.eim.lab07.calculatorwebservice.general.Constants;
 
 public class CalculatorWebServiceAsyncTask extends AsyncTask<String, Void, String> {
 
@@ -20,9 +39,38 @@ public class CalculatorWebServiceAsyncTask extends AsyncTask<String, Void, Strin
 
         // TODO exercise 4
         // signal missing values through error messages
-
+        if (operator1 == null || operator2 == null
+        || operation == null || method < 0) {
+            return "Error: Missing value(s)";
+        }
         // create an instance of a HttpClient object
 
+        try {
+            HttpClient httpClient = new DefaultHttpClient();
+            if (method == Constants.GET_OPERATION) {
+                HttpGet httpGet = new HttpGet(Constants.GET_WEB_SERVICE_ADDRESS
+                        + "?" + Constants.OPERATION_ATTRIBUTE + "=" + operation
+                        + "&" + Constants.OPERATOR1_ATTRIBUTE + "=" + operator1
+                        + "&" + Constants.OPERATOR2_ATTRIBUTE + "=" + operator2);
+                ResponseHandler<String> responseHandlerGet = new BasicResponseHandler();
+                return httpClient.execute(httpGet, responseHandlerGet);
+            } else {
+                HttpPost httpPost = new HttpPost(Constants.POST_WEB_SERVICE_ADDRESS);
+                List<NameValuePair> parameters = new ArrayList<>();
+                parameters.add(new BasicNameValuePair(Constants.OPERATION_ATTRIBUTE, operation));
+                parameters.add(new BasicNameValuePair(Constants.OPERATOR1_ATTRIBUTE, operator1));
+                parameters.add(new BasicNameValuePair(Constants.OPERATOR2_ATTRIBUTE, operator2));
+                UrlEncodedFormEntity urlEncodedFormEntity = new UrlEncodedFormEntity(parameters, HTTP.UTF_8);
+                httpPost.setEntity(urlEncodedFormEntity);
+                ResponseHandler<String> responseHandlerPost = new BasicResponseHandler();
+                return httpClient.execute(httpPost, responseHandlerPost);
+            }
+        } catch (Exception exception) {
+            Log.e(Constants.TAG, exception.getMessage());
+            if (Constants.DEBUG) {
+                exception.printStackTrace();
+            }
+        }
         // get method used for sending request from methodsSpinner
 
         // 1. GET
@@ -43,6 +91,7 @@ public class CalculatorWebServiceAsyncTask extends AsyncTask<String, Void, Strin
     @Override
     protected void onPostExecute(String result) {
         // display the result in resultTextView
+        resultTextView.setText(result);
     }
 
 }
